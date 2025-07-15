@@ -33,7 +33,7 @@ jobs:
           MODULE_VERSION=$(uv version)
           echo "Git Tag Version: $TAG_VERSION"
           echo "Python Module Version: $MODULE_VERSION"
-          if [[ " $PACKAGE_NAME $TAG_VERSION" != "$MODULE_VERSION" ]]; then exit 1; fi
+          if [[ "$PACKAGE_NAME $TAG_VERSION" != "$MODULE_VERSION" ]]; then exit 1; fi
           echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
 
       - name: Build Package

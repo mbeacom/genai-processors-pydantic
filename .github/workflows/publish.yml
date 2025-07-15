@@ -5,6 +5,10 @@ on:
     tags:
       - '*'
 
+permissions:
+  contents: write
+  discussions: write
+
 env:
   EXIT_ON_PUBLISH_FAILURE: 1
 

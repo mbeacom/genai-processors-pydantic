@@ -12,6 +12,7 @@ jobs:
   publish:
     name: Publish Release
     runs-on: ubuntu-latest
+    environment: pypi
     permissions:
       id-token: write
     steps:

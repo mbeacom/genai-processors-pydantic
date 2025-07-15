@@ -55,7 +55,12 @@ async def multi_validator_pipeline():
         # User data
         {"user_id": 1, "username": "alice", "email": "alice@example.com"},
         # Product data
-        {"product_id": 101, "name": "Widget", "price": 29.99, "category": "gadgets"},
+        {
+            "product_id": 101,
+            "name": "Widget",
+            "price": 29.99,
+            "category": "gadgets"
+        },
         # Order data
         {"order_id": 1001, "user_id": 1, "items": [101], "total": 29.99},
         # Invalid user (will fail)
@@ -83,22 +88,18 @@ async def multi_validator_pipeline():
 
     async def process_with_all_validators(stream):
         """Process stream through all validators, collecting results."""
-        # Convert stream to list for multiple processing
-        parts_list = []
         async for part in stream:
-            parts_list.append(part)
-
-        # Process each part through all validators
-        for part in parts_list:
             matched_any = False
-
-            for i, validator in enumerate(all_validators):
-                validator_name = ["User", "Product", "Order"][i]
-
-                # Check if this validator can handle the data
+            data = None
+            if part.text:
                 try:
-                    # Test if the JSON structure looks like it could match
                     data = json.loads(part.text)
+                except json.JSONDecodeError:
+                    pass  # Not JSON, will be handled as "no match"
+
+            if data:
+                for i, validator in enumerate(all_validators):
+                    validator_name = ["User", "Product", "Order"][i]
 
                     # Simple heuristic - check for key fields
                     model_hints = {
@@ -107,37 +108,52 @@ async def multi_validator_pipeline():
                         2: "order_id" in data and "items" in data,  # Order
                     }
 
-                    if not model_hints.get(i, False):
-                        continue  # Skip this validator
+                    if model_hints.get(i, False):
+                        # Heuristic match, now try full match and process
+                        if validator.match(part):
+                            matched_any = True
+                            print(
+                                f"\n🔍 {validator_name} Validator processing..."
+                            )
 
-                except json.JSONDecodeError:
-                    continue  # Skip non-JSON data for this validator
-
-                if validator.match(part):
-                    matched_any = True
-                    print(f"\n🔍 {validator_name} Validator processing...")
-
-                    async for result in validator(part):
-                        if result.substream_name == processor.STATUS_STREAM:
-                            print(f"   Status: {result.text}")
-                        else:
-                            status = result.metadata.get("validation_status")
-                            if status == "success":
-                                model_name = result.metadata["validated_model"]
-                                data = result.metadata["validated_data"]
-                                print(f"   ✅ Valid {model_name}: {data}")
-                            elif status == "failure":
-                                errors = result.metadata["validation_errors"]
-                                error_count = len(errors)
-                                print(f"   ❌ Failed: {error_count} errors")
-                                for error in errors:
-                                    loc = error["loc"][0]
-                                    msg = error["msg"]
-                                    print(f"      - {loc}: {msg}")
-                            else:
-                                text_preview = result.text[:50]
-                                print(f"   ⚪ Passed: {text_preview}...")
-                    break  # Only process with first matching validator
+                            async for result in validator(part):
+                                if (result.substream_name ==
+                                        processor.STATUS_STREAM):
+                                    print(f"   Status: {result.text}")
+                                else:
+                                    status = result.metadata.get(
+                                        "validation_status"
+                                    )
+                                    if status == "success":
+                                        model_name = result.metadata[
+                                            "validated_model"
+                                        ]
+                                        validated_data = result.metadata[
+                                            "validated_data"
+                                        ]
+                                        print(
+                                            f"   ✅ Valid {model_name}: "
+                                            f"{validated_data}"
+                                        )
+                                    elif status == "failure":
+                                        errors = result.metadata[
+                                            "validation_errors"
+                                        ]
+                                        error_count = len(errors)
+                                        print(
+                                            f"   ❌ Failed: {error_count} "
+                                            f"errors"
+                                        )
+                                        for error in errors:
+                                            loc = error["loc"][0]
+                                            msg = error["msg"]
+                                            print(f"      - {loc}: {msg}")
+                                    else:
+                                        text_preview = result.text[:50]
+                                        print(
+                                            f"   ⚪ Passed: {text_preview}..."
+                                        )
+                            break  # Only process with first matching validator
 
             if not matched_any:
                 print(f"\n⚪ No validators matched: {part.text[:50]}...")

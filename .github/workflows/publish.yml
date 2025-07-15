@@ -5,6 +5,9 @@ on:
     tags:
       - '*'
 
+env:
+  EXIT_ON_PUBLISH_FAILURE: 1
+
 jobs:
   publish:
     name: Publish Release
@@ -36,9 +39,8 @@ jobs:
       - name: Build Package
         run: uv build
 
-      # TODO: Update the PyPi token to push to PyPi.
       - name: Publish to PyPi
-        run: uv publish
+        run: uv publish || exit $EXIT_ON_PUBLISH_FAILURE
 
       - name: Release
         uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8  # v2.3.2

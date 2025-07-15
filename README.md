@@ -110,7 +110,7 @@ class UserEvent(BaseModel):
 
 
 # 2. Create the validator.
-validator = PydanticValidator(model=UserEvent, config=ValidationConfig(strict_mode=True))
+validator = PydanticValidator(model=UserEvent)
 
 # 3. Define downstream processors for success and failure cases.
 class DatabaseWriter(processor.PartProcessor):
@@ -144,29 +144,35 @@ input_stream = streams.stream_content([
 async def main():
     print("--- Running Validation Pipeline ---")
 
-    # First, run the validator on the raw input.
-    validated_stream = validator(input_stream)
+    # First, run the validator on each input part and collect results.
+    validated_parts = []
+    async for input_part in input_stream:
+        async for validated_part in validator(input_part):
+            validated_parts.append(validated_part)
 
     # Create separate streams for valid and invalid parts by filtering the metadata.
     # We also filter out the status messages for this example.
+    valid_parts = [
+        part for part in validated_parts
+        if part.metadata.get("validation_status") == "success"
+    ]
+    invalid_parts = [
+        part for part in validated_parts
+        if part.metadata.get("validation_status") == "failure"
+    ]
 
-    async def is_valid(part):
-        return part.metadata.get("validation_status") == "success"
-
-    async def is_invalid(part):
-        return part.metadata.get("validation_status") == "failure"
-
-    valid_events = streams.filter_stream(validated_stream, is_valid)
-    invalid_events = streams.filter_stream(validated_stream, is_invalid)
+    # Convert back to async streams
+    valid_stream = streams.stream_content(valid_parts)
+    invalid_stream = streams.stream_content(invalid_parts)
 
     # Chain the downstream processors.
-    db_pipeline = valid_events + DatabaseWriter()
-    error_pipeline = invalid_events + ErrorLogger()
+    db_pipeline = valid_stream | DatabaseWriter()
+    error_pipeline = invalid_stream | ErrorLogger()
 
-    # Run both pipelines concurrently.
+    # Run both pipelines concurrently by consuming them.
     await asyncio.gather(
-        streams.drain_stream(db_pipeline),
-        streams.drain_stream(error_pipeline)
+        streams.gather_stream(db_pipeline),
+        streams.gather_stream(error_pipeline)
     )
     print("--- Pipeline Finished ---")
 

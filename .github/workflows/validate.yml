@@ -1,0 +1,46 @@
+name: 'Validation'
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: continuous-integration
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@bd01e18f51369d5a26f1651c3cb451d3417e3bba  # v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Install the project
+        run: uv sync --locked --all-extras --all-groups
+
+      - name: Run tests
+        run: uv run poe test
+
+      - name: Run security checks
+        if: matrix.python-version == '3.13'
+        run: uv run poe security
+
+      - name: Codecov
+        if: matrix.python-version == '3.13'
+        uses: codecov/codecov-action@7f8b4b4bde536c465e797be725718b88c5d95e0e  # v5.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

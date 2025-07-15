@@ -1,0 +1,209 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "genai-processors-pydantic"
+version = "0.1.0"
+description = "A Pydantic validator processor for Google's genai-processors framework"
+authors = [
+    {name = "Mark Beacom", email = "m@beacom.dev"},
+]
+license = {text = "Apache-2.0"}
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = [
+    "genai-processors",
+    "genai-processors-contrib",
+    "pydantic",
+    "gemini",
+    "processors",
+    "processor",
+    "google",
+    "genai",
+    "generative-ai",
+    "ai",
+    "deepmind",
+    "validation",
+    "schema",
+    "contrib",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Framework :: Pydantic",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "genai-processors>=1.0.4",
+    "pydantic>=2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mbeacom/genai-processors-pydantic"
+Repository = "https://github.com/mbeacom/genai-processors-pydantic.git"
+Issues = "https://github.com/mbeacom/genai-processors-pydantic/issues"
+Documentation = "https://github.com/mbeacom/genai-processors-pydantic#readme"
+
+[dependency-groups]
+dev = [
+    "build>=1.0.0",
+    "twine>=5.0.0",
+    "ruff>=0.7.0",
+    "poethepoet>=0.36.0",
+    "black>=25.1.0",
+    "mypy>=1.17.0",
+]
+security = [
+    "bandit[toml]>=1.8.6",
+]
+test = [
+    "coverage>=7.9.2",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.2.1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["genai_processors_pydantic"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/genai_processors_pydantic",
+    "/examples",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["genai_processors_pydantic/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py313"]
+
+[tool.coverage.run]
+source = ["genai_processors_pydantic"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__init__.py",
+    "*/__main__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle errors
+    "F", # pyflakes
+    "B", # bugbear
+    "W", # pycodestyle warnings
+    "C90", # McCabe complexity
+    "I", # isort
+    "N", # pep8-naming
+    "D", # pydocstyle
+    "UP", # pyupgrade
+    "ANN", # flake8-annotations
+    "S", # bandit
+    "ASYNC", # flake8-async
+    "BLE", # flake8-blind-except
+    "FBT", # flake8-boolean-trap
+    "A", # flake8-builtins
+    "COM", # flake8-commas
+    "C4", # flake8-comprehensions
+    "DTZ", # flake8-datetimez
+    "T10", # flake8-debugger
+    "EM", # flake8-errmsg
+    "EXE", # flake8-executable
+    "FA", # flake8-future-annotations
+    "ISC", # flake8-implicit-str-concat
+    "G", # flake8-logging-format
+    "PT", # flake8-pytest-style
+    "Q", # flake8-quotes
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "SLF", # flake8-self
+    "SLOT", # flake8-slots
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "FLY", # flynt
+    "ARG", # flake8-unused-arguments
+]
+ignore = [
+    "E501", # line too long, handled by black
+    "B008", # do not perform function calls in argument defaults
+    "ARG002", # unused method argument
+    "D213", # multi-line-summary-first-line
+    "D203", # incorrect-blank-line-before-class
+]
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"*/tests/*" = ["ARG", "S"]
+"examples/*" = ["T201", "C901", "ANN"] # allow print statements, complex functions, and missing annotations in examples
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]  # Skip assert_used warnings
+
+[tool.mypy]
+exclude = ["examples", "tests"]
+
+[[tool.mypy.overrides]]
+# TODO: Update this temporary fix after genai_processors provides types...
+module = ["genai_processors.*"]
+follow_untyped_imports = true
+
+[tool.poe.tasks]
+black = "black ."
+check-black = {cmd = "black . --check --diff", help = "Validate styling with black"}
+update-precommit-hooks = {cmd = "pre-commit autoupdate --freeze", help = "Update pre-commit hooks and freeze to SHAs"}
+check-precommit-hooks = {cmd = "pre-commit run --all-files", help = "Run pre-commit hooks on all files"}
+check-ruff = "uv run ruff check genai_processors_pydantic"
+check-mypy = "uv run mypy genai_processors_pydantic"
+check = ["check-ruff", "check-black", "check-mypy"]
+lint = ["ruff"]
+fix = ["ruff", "black"]
+test = "uv run pytest --cov=genai_processors_pydantic --cov-report=xml --cov-report=term --cov-branch"
+ruff = "uv run ruff check --fix genai_processors_pydantic"
+bandit = "uv run bandit -c pyproject.toml -r genai_processors_pydantic"
+security = ["bandit"]
+install = "uv sync --all-groups"
+build = "uv build"

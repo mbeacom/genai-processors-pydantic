@@ -196,13 +196,13 @@ black = "black ."
 check-black = {cmd = "black . --check --diff", help = "Validate styling with black"}
 update-precommit-hooks = {cmd = "pre-commit autoupdate --freeze", help = "Update pre-commit hooks and freeze to SHAs"}
 check-precommit-hooks = {cmd = "pre-commit run --all-files", help = "Run pre-commit hooks on all files"}
-check-ruff = "ruff check genai_processors_pydantic"
-check-mypy = "mypy genai_processors_pydantic"
+check-ruff = "uv run ruff check genai_processors_pydantic"
+check-mypy = "uv run mypy genai_processors_pydantic"
 check = ["check-ruff", "check-black", "check-mypy"]
 lint = ["ruff"]
 fix = ["ruff", "black"]
-test = "pytest --cov=genai_processors_pydantic --cov-report=xml --cov-report=term --cov-branch"
-ruff = "ruff check --fix genai_processors_pydantic"
+test = "uv run pytest --cov=genai_processors_pydantic --cov-report=xml --cov-report=term --cov-branch"
+ruff = "uv run ruff check --fix genai_processors_pydantic"
 bandit = "uv run bandit -c pyproject.toml -r genai_processors_pydantic"
 security = ["bandit"]
 install = "uv sync --all-groups"

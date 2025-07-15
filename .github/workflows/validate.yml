@@ -30,15 +30,17 @@ jobs:
           enable-cache: true
 
       - name: Install the project
-        run: uv sync --locked --all-extras --dev
-
-      - name: Run security checks
-        run: uv run poe security
+        run: uv sync --locked --all-extras --all-groups
 
       - name: Run tests
         run: uv run poe test
 
+      - name: Run security checks
+        if: matrix.python-version == '3.13'
+        run: uv run poe security
+
       - name: Codecov
+        if: matrix.python-version == '3.13'
         uses: codecov/codecov-action@7f8b4b4bde536c465e797be725718b88c5d95e0e  # v5.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

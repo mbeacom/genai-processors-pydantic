@@ -55,12 +55,7 @@ async def multi_validator_pipeline():
         # User data
         {"user_id": 1, "username": "alice", "email": "alice@example.com"},
         # Product data
-        {
-            "product_id": 101,
-            "name": "Widget",
-            "price": 29.99,
-            "category": "gadgets"
-        },
+        {"product_id": 101, "name": "Widget", "price": 29.99, "category": "gadgets"},
         # Order data
         {"order_id": 1001, "user_id": 1, "items": [101], "total": 29.99},
         # Invalid user (will fail)
@@ -108,52 +103,35 @@ async def multi_validator_pipeline():
                         2: "order_id" in data and "items" in data,  # Order
                     }
 
-                    if model_hints.get(i, False):
+                    if model_hints.get(i, False) and validator.match(part):
                         # Heuristic match, now try full match and process
-                        if validator.match(part):
-                            matched_any = True
-                            print(
-                                f"\n🔍 {validator_name} Validator processing..."
-                            )
+                        matched_any = True
+                        print(f"\n🔍 {validator_name} Validator processing...")
 
-                            async for result in validator(part):
-                                if (result.substream_name ==
-                                        processor.STATUS_STREAM):
-                                    print(f"   Status: {result.text}")
-                                else:
-                                    status = result.metadata.get(
-                                        "validation_status"
+                        async for result in validator(part):
+                            if result.substream_name == processor.STATUS_STREAM:
+                                print(f"   Status: {result.text}")
+                            else:
+                                status = result.metadata.get("validation_status")
+                                if status == "success":
+                                    model_name = result.metadata["validated_model"]
+                                    validated_data = result.metadata["validated_data"]
+                                    print(
+                                        f"   ✅ Valid {model_name}: "
+                                        f"{validated_data}",
                                     )
-                                    if status == "success":
-                                        model_name = result.metadata[
-                                            "validated_model"
-                                        ]
-                                        validated_data = result.metadata[
-                                            "validated_data"
-                                        ]
-                                        print(
-                                            f"   ✅ Valid {model_name}: "
-                                            f"{validated_data}"
-                                        )
-                                    elif status == "failure":
-                                        errors = result.metadata[
-                                            "validation_errors"
-                                        ]
-                                        error_count = len(errors)
-                                        print(
-                                            f"   ❌ Failed: {error_count} "
-                                            f"errors"
-                                        )
-                                        for error in errors:
-                                            loc = error["loc"][0]
-                                            msg = error["msg"]
-                                            print(f"      - {loc}: {msg}")
-                                    else:
-                                        text_preview = result.text[:50]
-                                        print(
-                                            f"   ⚪ Passed: {text_preview}..."
-                                        )
-                            break  # Only process with first matching validator
+                                elif status == "failure":
+                                    errors = result.metadata["validation_errors"]
+                                    error_count = len(errors)
+                                    print(f"   ❌ Failed: {error_count} errors")
+                                    for error in errors:
+                                        loc = error["loc"][0]
+                                        msg = error["msg"]
+                                        print(f"      - {loc}: {msg}")
+                                else:
+                                    text_preview = result.text[:50]
+                                    print(f"   ⚪ Passed: {text_preview}...")
+                        break  # Only process with first matching validator
 
             if not matched_any:
                 print(f"\n⚪ No validators matched: {part.text[:50]}...")

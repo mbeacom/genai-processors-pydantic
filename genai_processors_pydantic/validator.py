@@ -101,8 +101,9 @@ class PydanticValidator(processor.PartProcessor):
         # Use lightweight heuristic to check if text looks like JSON
         if part.text and isinstance(part.text, str):
             text = part.text.strip()
-            if ((text.startswith("{") and text.endswith("}")) or
-                    (text.startswith("[") and text.endswith("]"))):
+            if (text.startswith("{") and text.endswith("}")) or (
+                text.startswith("[") and text.endswith("]")
+            ):
                 return True
 
         return False

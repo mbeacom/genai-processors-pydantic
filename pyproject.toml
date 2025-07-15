@@ -55,12 +55,21 @@ Documentation = "https://github.com/mbeacom/genai-processors-pydantic#readme"
 
 [dependency-groups]
 dev = [
-    "coverage>=7.9.2",
-    "pytest>=8.4.1",
-    "pytest-asyncio>=0.24.0",
     "build>=1.0.0",
     "twine>=5.0.0",
     "ruff>=0.7.0",
+    "poethepoet>=0.36.0",
+    "black>=25.1.0",
+    "mypy>=1.17.0",
+]
+security = [
+    "bandit[toml]>=1.8.6",
+]
+test = [
+    "coverage>=7.9.2",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.2.1",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -87,6 +96,10 @@ addopts = [
     "-ra",
 ]
 
+[tool.black]
+line-length = 88
+target-version = ["py313"]
+
 [tool.coverage.run]
 source = ["genai_processors_pydantic"]
 omit = [
@@ -111,7 +124,7 @@ exclude_lines = [
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py313"
 line-length = 88
 
 [tool.ruff.lint]
@@ -169,3 +182,28 @@ unfixable = []
 [tool.bandit]
 exclude_dirs = ["tests"]
 skips = ["B101"]  # Skip assert_used warnings
+
+[tool.mypy]
+exclude = ["examples", "tests"]
+
+[[tool.mypy.overrides]]
+# TODO: Update this temporary fix after genai_processors provides types...
+module = ["genai_processors.*"]
+follow_untyped_imports = true
+
+[tool.poe.tasks]
+black = "black ."
+check-black = {cmd = "black . --check --diff", help = "Validate styling with black"}
+update-precommit-hooks = {cmd = "pre-commit autoupdate --freeze", help = "Update pre-commit hooks and freeze to SHAs"}
+check-precommit-hooks = {cmd = "pre-commit run --all-files", help = "Run pre-commit hooks on all files"}
+check-ruff = "ruff check genai_processors_pydantic"
+check-mypy = "mypy genai_processors_pydantic"
+check = ["check-ruff", "check-black", "check-mypy"]
+lint = ["ruff"]
+fix = ["ruff", "black"]
+test = "pytest --cov=genai_processors_pydantic --cov-report=xml --cov-report=term --cov-branch"
+ruff = "ruff check --fix genai_processors_pydantic"
+bandit = "uv run bandit -c pyproject.toml -r genai_processors_pydantic"
+security = ["bandit"]
+install = "uv sync --all-groups"
+build = "uv build"

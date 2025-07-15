@@ -114,17 +114,20 @@ validator = PydanticValidator(model=UserEvent)
 
 # 3. Define downstream processors for success and failure cases.
 class DatabaseWriter(processor.PartProcessor):
-    def process_part(self, part: processor.ProcessorPart) -> processor.ProcessorPart:
+    async def call(self, part: processor.ProcessorPart):
         validated_data = part.metadata['validated_data']
-        print(f"DATABASE: Writing event '{validated_data['event_name']}' for user {validated_data['user_id']}")
-        return part
+        print(
+            f"DATABASE: Writing event '{validated_data['event_name']}' "
+            f"for user {validated_data['user_id']}"
+        )
+        yield part
 
 
 class ErrorLogger(processor.PartProcessor):
-    def process_part(self, part: processor.ProcessorPart) -> processor.ProcessorPart:
+    async def call(self, part: processor.ProcessorPart):
         errors = part.metadata['validation_errors']
         print(f"ERROR_LOG: Found {len(errors)} validation errors.")
-        return part
+        yield part
 
 
 # 4. Create a stream with mixed-quality data.
@@ -144,36 +147,41 @@ input_stream = streams.stream_content([
 async def main():
     print("--- Running Validation Pipeline ---")
 
-    # First, run the validator on each input part and collect results.
-    validated_parts = []
+    # Process each input part through the validator as it arrives
+    # This avoids buffering the entire stream in memory
+    valid_parts = []
+    invalid_parts = []
+
     async for input_part in input_stream:
         async for validated_part in validator(input_part):
-            validated_parts.append(validated_part)
+            # Filter based on validation status (skip status messages)
+            status = validated_part.metadata.get("validation_status")
+            if status == "success":
+                valid_parts.append(validated_part)
+            elif status == "failure":
+                invalid_parts.append(validated_part)
 
-    # Create separate streams for valid and invalid parts by filtering the metadata.
-    # We also filter out the status messages for this example.
-    valid_parts = [
-        part for part in validated_parts
-        if part.metadata.get("validation_status") == "success"
-    ]
-    invalid_parts = [
-        part for part in validated_parts
-        if part.metadata.get("validation_status") == "failure"
-    ]
-
-    # Convert back to async streams
+    # Create streams from the filtered parts
     valid_stream = streams.stream_content(valid_parts)
     invalid_stream = streams.stream_content(invalid_parts)
 
-    # Chain the downstream processors.
-    db_pipeline = valid_stream | DatabaseWriter()
-    error_pipeline = invalid_stream | ErrorLogger()
+    # Create processor instances
+    db_writer = DatabaseWriter()
+    error_logger = ErrorLogger()
 
-    # Run both pipelines concurrently by consuming them.
-    await asyncio.gather(
-        streams.gather_stream(db_pipeline),
-        streams.gather_stream(error_pipeline)
-    )
+    # Process both streams concurrently
+    async def process_valid():
+        async for part in valid_stream:
+            async for result in db_writer(part):
+                pass  # Results are printed in the processor
+
+    async def process_invalid():
+        async for part in invalid_stream:
+            async for result in error_logger(part):
+                pass  # Results are printed in the processor
+
+    # Run both processing pipelines concurrently
+    await asyncio.gather(process_valid(), process_invalid())
     print("--- Pipeline Finished ---")
 
 

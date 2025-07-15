@@ -35,13 +35,10 @@ async def main() -> None:
     test_data = [
         # Valid user data
         {"user_id": 1, "username": "alice", "email": "alice@example.com"},
-
         # Invalid: username too short
         {"user_id": 2, "username": "bo", "email": "bob@example.com"},
-
         # Invalid: missing email
         {"user_id": 3, "username": "charlie"},
-
         # Not JSON - will be passed through
         "This is just text and will be ignored",
     ]
@@ -71,10 +68,10 @@ async def main() -> None:
         validation_status = result_part.metadata.get("validation_status")
 
         if validation_status == "success":
-            validated_user = result_part.metadata["validated_instance"]
+            validated_data = result_part.metadata["validated_data"]
             print(
-                f"✅ Valid user: {validated_user.username} "
-                f"({validated_user.email})",
+                f"✅ Valid user: {validated_data['username']} "
+                f"({validated_data['email']})",
             )
 
         elif validation_status == "failure":

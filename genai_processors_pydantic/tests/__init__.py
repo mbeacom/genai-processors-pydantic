@@ -1,1 +1,1 @@
-"""Tests for pydantic_genai_processor."""
+"""Tests for genai_processors_pydantic."""

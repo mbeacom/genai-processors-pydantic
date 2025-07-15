@@ -29,6 +29,11 @@ class PydanticValidator(processor.PartProcessor):
     It provides feedback through the status stream and can be configured
     to either fail fast or continue on validation errors.
 
+    Current Limitations (see MAINTAINER_FEEDBACK.md for details):
+    - Works best with complete JSON in single Parts (streaming challenges)
+    - Single-model validation only (stackability limitations)
+    - Standard JSON Parts only (tool response integration planned)
+
     Example:
         ```python
         from pydantic import BaseModel
@@ -78,6 +83,10 @@ class PydanticValidator(processor.PartProcessor):
     def match(self, part: processor.ProcessorPart) -> bool:
         """Determine if this part should be processed.
 
+        Uses dual detection strategy to address MIME type marking limitations:
+        1. Check for properly marked JSON Parts (preferred)
+        2. Fallback to JSON parsing detection (addresses unmarked JSON)
+
         Args:
             part: The ProcessorPart to check.
 
@@ -100,7 +109,8 @@ class PydanticValidator(processor.PartProcessor):
         return False
 
     def _get_data_to_validate(
-        self, part: processor.ProcessorPart,
+        self,
+        part: processor.ProcessorPart,
     ) -> JsonData:
         """Extract JSON data from a part's text.
 
@@ -150,10 +160,8 @@ class PydanticValidator(processor.PartProcessor):
     ) -> AsyncIterable[processor.ProcessorPart]:
         """Yield parts for a successful validation.
 
-        We store Pydantic instance in metadata for downstream processors.
-        This may cause serialization issues if metadata is later serialized.
-        The instance provides convenient access to validated data with proper
-        types.
+        We store the serialized validated data in metadata to ensure
+        ProcessorParts remain serializable for distributed systems.
 
         Args:
             validated_data: The validated Pydantic model instance.
@@ -166,11 +174,11 @@ class PydanticValidator(processor.PartProcessor):
         # Store the validated data as JSON text
         validated_json_text = json.dumps(validated_data.model_dump(), indent=2)
 
-        # Include the validated instance in metadata for convenience
+        # Store serialized data to maintain ProcessorPart serializability
         success_metadata = {
             "validation_status": "success",
             "validated_model": self.model.__name__,
-            "validated_instance": validated_data,  # Live Pydantic instance
+            "validated_data": validated_data.model_dump(),
         }
 
         validated_part = self._create_part_with_merged_metadata(

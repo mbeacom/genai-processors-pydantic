@@ -59,11 +59,11 @@ class TestPydanticValidator:
         assert validated_part.metadata["validation_status"] == "success"
         assert validated_part.metadata["validated_model"] == "UserProfile"
 
-        # The validated instance should be in metadata
-        validated_instance = validated_part.metadata["validated_instance"]
-        assert isinstance(validated_instance, UserProfile)
-        assert validated_instance.user_id == 123
-        assert validated_instance.is_active is True  # Default value applied
+        # The validated data should be in metadata as a dictionary
+        validated_data = validated_part.metadata["validated_data"]
+        assert isinstance(validated_data, dict)
+        assert validated_data["user_id"] == 123
+        assert validated_data["is_active"] is True  # Default value applied
 
         # Check status message
         assert status_part.substream_name == processor.STATUS_STREAM
@@ -180,11 +180,11 @@ class TestPydanticValidator:
         assert validated_part.metadata["validation_status"] == "success"
         assert "Successfully validated" in status_part.text
 
-        # Verify the validated instance
-        validated_instance = validated_part.metadata["validated_instance"]
-        assert isinstance(validated_instance, Product)
-        assert validated_instance.id == 123
-        assert validated_instance.price == 19.99
+        # Verify the validated data as a dictionary
+        validated_data = validated_part.metadata["validated_data"]
+        assert isinstance(validated_data, dict)
+        assert validated_data["id"] == 123
+        assert validated_data["price"] == 19.99
 
     def test_match_function(self) -> None:
         """Test the match function correctly identifies processable parts."""

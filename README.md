@@ -4,6 +4,17 @@ A Pydantic validator processor for Google's [genai-processors](https://github.co
 
 **Note:** This is an independent contrib processor that extends the genai-processors ecosystem.
 
+## ⚠️ Important: Current Limitations & Roadmap
+
+This processor was developed based on feedback from the genai-processors maintainers. While functional and tested, it has known limitations in certain scenarios. See [MAINTAINER_FEEDBACK.md](MAINTAINER_FEEDBACK.md) for detailed analysis and our roadmap to address these challenges:
+
+* **Streaming**: Currently works best with complete JSON in single Parts
+* **Tool Integration**: Planned support for `genai_types.ToolResponse` Parts
+* **Multi-Model Validation**: Single-model design; multi-model support planned
+* **MIME Type Independence**: ✅ Already handles unmarked JSON Parts
+
+We're committed to addressing these limitations while maintaining a stable API.
+
 ## PydanticValidator
 
 The PydanticValidator is a PartProcessor that validates the JSON content of a ProcessorPart against a specified [Pydantic](https://docs.pydantic.dev/latest/) model. It provides a simple, declarative way to enforce data schemas and improve the robustness of your AI pipelines.
@@ -65,7 +76,7 @@ The PydanticValidator processes parts that contain valid JSON in their text fiel
 ### On Successful Validation
 
 * The yielded part's metadata['validation_status'] is set to 'success'.
-* The metadata['validated_instance'] contains the actual Pydantic model object.
+* The metadata['validated_data'] contains the serialized dictionary representation of the validated data (ensuring ProcessorParts remain serializable).
 * The part's text is updated to be the formatted JSON representation of the validated data.
 * A processor.status() message like ✅ Successfully validated... is yielded.
 
@@ -99,13 +110,13 @@ class UserEvent(BaseModel):
 
 
 # 2. Create the validator.
-validator = PydanticValidator(model=UserEvent)
+validator = PydanticValidator(model=UserEvent, config=ValidationConfig(strict_mode=True))
 
 # 3. Define downstream processors for success and failure cases.
 class DatabaseWriter(processor.PartProcessor):
     def process_part(self, part: processor.ProcessorPart) -> processor.ProcessorPart:
-        user_event = part.metadata['validated_instance']
-        print(f"DATABASE: Writing event '{user_event.event_name}' for user {user_event.user_id}")
+        validated_data = part.metadata['validated_data']
+        print(f"DATABASE: Writing event '{validated_data['event_name']}' for user {validated_data['user_id']}")
         return part
 
 

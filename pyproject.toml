@@ -41,8 +41,6 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "genai-processors>=1.0.4",
@@ -166,4 +164,8 @@ unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
 "*/tests/*" = ["ARG", "S"]
-"examples/*" = ["T201"] # allow print statements in examples
+"examples/*" = ["T201", "C901", "ANN"] # allow print statements, complex functions, and missing annotations in examples
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]  # Skip assert_used warnings

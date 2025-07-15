@@ -5,10 +5,6 @@ on:
     tags:
       - '*'
 
-permissions:
-  contents: write
-  discussions: write
-
 env:
   EXIT_ON_PUBLISH_FAILURE: 1
 
@@ -19,6 +15,8 @@ jobs:
     environment: pypi
     permissions:
       id-token: write
+      contents: write
+      discussions: write
     steps:
       - name: Checkout Source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2

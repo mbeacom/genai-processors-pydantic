@@ -85,7 +85,7 @@ class PydanticValidator(processor.PartProcessor):
 
         Uses dual detection strategy to address MIME type marking limitations:
         1. Check for properly marked JSON Parts (preferred)
-        2. Fallback to JSON parsing detection (addresses unmarked JSON)
+        2. Fallback to heuristic JSON detection (addresses unmarked JSON)
 
         Args:
             part: The ProcessorPart to check.
@@ -98,13 +98,12 @@ class PydanticValidator(processor.PartProcessor):
         if mime_types.is_json(part.mimetype) and part.text:
             return True
 
-        # Check if text content can be parsed as JSON
-        if part.text:
-            try:
-                json.loads(part.text)
+        # Use lightweight heuristic to check if text looks like JSON
+        if part.text and isinstance(part.text, str):
+            text = part.text.strip()
+            if ((text.startswith("{") and text.endswith("}")) or
+                    (text.startswith("[") and text.endswith("]"))):
                 return True
-            except (json.JSONDecodeError, TypeError):
-                pass
 
         return False
 

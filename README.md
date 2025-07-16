@@ -1,5 +1,10 @@
 # genai-processors-pydantic
 
+[![PyPI version](https://img.shields.io/pypi/v/genai-processors-pydantic.svg)](https://pypi.org/project/genai-processors-pydantic/)
+[![Validation](https://github.com/mbeacom/genai-processors-pydantic/actions/workflows/validate.yml/badge.svg)](https://github.com/mbeacom/genai-processors-pydantic/actions/workflows/validate.yml)
+[![codecov](https://codecov.io/github/mbeacom/pydantic-gemini-processor/graph/badge.svg?token=9Ue94I4FEw)](https://codecov.io/github/mbeacom/pydantic-gemini-processor)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 A Pydantic validator processor for Google's [genai-processors](https://github.com/google-gemini/genai-processors) framework.
 
 **Note:** This is an independent contrib processor that extends the genai-processors ecosystem.

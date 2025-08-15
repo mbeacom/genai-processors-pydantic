@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "genai-processors-pydantic"
-version = "0.1.1"
+version = "0.1.2"
 description = "A Pydantic validator processor for Google's genai-processors framework"
 authors = [
     {name = "Mark Beacom", email = "m@beacom.dev"},

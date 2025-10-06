@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@d9e0f98d3fc6adb07d1e3d37f3043649ddad06a1  # v6.5.0
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
         with:
           enable-cache: true
           python-version-file: .python-version
@@ -45,7 +45,7 @@ jobs:
         run: uv publish || exit $EXIT_ON_PUBLISH_FAILURE
 
       - name: Release
-        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8  # v2.3.2
+        uses: softprops/action-gh-release@62c96d0c4e8a889135c1f3a25910db8dbe0e85f7  # v2.3.4
         with:
           discussion_category_name: announcements
           generate_release_notes: true

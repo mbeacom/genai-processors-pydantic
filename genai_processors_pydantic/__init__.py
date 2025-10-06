@@ -8,5 +8,5 @@ This is an independent contrib processor for the genai-processors ecosystem.
 
 from .validator import PydanticValidator, ValidationConfig
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __all__ = ["PydanticValidator", "ValidationConfig"]
